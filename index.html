@@ -79,10 +79,6 @@
       <div style="text-align: center; color: var(--muted); font-family: 'Space Mono', monospace; font-size: 12px; letter-spacing: 1px;">NEXT HUEDAY IN <span id="countdown"></span></div>
     </div>
 
-    <div style="text-align: center; margin-top: 22px;">
-      <button id="resetBtn" style="background: none; border: none; color: var(--muted); font-family: 'Space Mono', monospace; font-size: 11px; cursor: pointer; text-decoration: underline; opacity: .7;">reset (demo)</button>
-    </div>
-
   </div>
 </div>
 
@@ -177,7 +173,7 @@
     sR: g("sR"), sG: g("sG"), sB: g("sB"),
     guessBtn: g("guessBtn"), triesLeft: g("triesLeft"), guesses: g("guesses"),
     resultPanel: g("resultPanel"), resultTitle: g("resultTitle"), resultSub: g("resultSub"),
-    shareRows: g("shareRows"), copyBtn: g("copyBtn"), countdown: g("countdown"), resetBtn: g("resetBtn"),
+    shareRows: g("shareRows"), copyBtn: g("copyBtn"), countdown: g("countdown"),
   };
 
   var CELL_STYLE = {
@@ -303,17 +299,6 @@
     els.copyBtn.textContent = "COPIED ✓";
     clearTimeout(copyTimer);
     copyTimer = setTimeout(function(){ els.copyBtn.textContent = "SHARE RESULT"; }, 2000);
-  });
-
-  els.resetBtn.addEventListener("click", function(){
-    cur = { r: 128, g: 128, b: 128 };
-    guesses = []; solved = false; failed = false; gameOver = false;
-    els.copyBtn.textContent = "SHARE RESULT";
-    clearTimeout(copyTimer);
-    try { localStorage.removeItem(STORE_KEY); } catch(e){}
-    prevLastSolved = -999;
-    renderGuessHistory();
-    renderAll();
   });
 
   // ---- init ----
