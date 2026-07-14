@@ -280,9 +280,9 @@
   });
 
   function copyText(){
-    var head = "Hueday #"+puzzleNo+" "+(solved?guesses.length:"X")+"/5"+(streak>1?" 🔥"+streak:"");
-    var grid = guesses.map(function(row){ return row.row.map(function(c){return c.emoji;}).join(""); }).join("\n");
-    return head+"\n"+grid+"\nhttps://nikeshvora1.github.io/hueday/";
+    var head = ("Hueday #"+puzzleNo+" "+(solved?guesses.length:"X")+"/5"+(streak>1?" 🔥"+streak:"")).trim();
+    var grid = guesses.map(function(row){ return row.row.map(function(c){return c.emoji;}).join("").trim(); }).join("\n");
+    return (head+"\n"+grid+"\nhttps://nikeshvora1.github.io/hueday/").trim();
   }
   function fallbackCopy(text){
     var ta = document.createElement("textarea");
