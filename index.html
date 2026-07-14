@@ -2,411 +2,324 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Hueday — the daily color match</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hueday — the daily color puzzle</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --paper: #ECEAE1; --paper-2: #E3E0D5; --card: #F6F4EC;
-    --ink: #17150F; --ink-soft: #4A4638; --ink-faint: #837D6B;
-    --rule: #D2CEBF; --shadow: rgba(30,26,12,.14);
-    --pink: #E63975; --green: #0FA574; --amber: #E0A008;
-    --mono: "SF Mono","JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
-    --display: "Futura","Avenir Next","Helvetica Neue",system-ui,sans-serif;
-    --body: system-ui,"Helvetica Neue",Arial,sans-serif;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root {
-      --paper:#131210; --paper-2:#1A1815; --card:#1D1B17;
-      --ink:#F1EDE1; --ink-soft:#C3BDAC; --ink-faint:#8B8574;
-      --rule:#302D26; --shadow:rgba(0,0,0,.5);
-      --pink:#FF5C93; --green:#2CD69A; --amber:#F5C542;
-    }
-  }
-  :root[data-theme="light"]{--paper:#ECEAE1;--paper-2:#E3E0D5;--card:#F6F4EC;--ink:#17150F;--ink-soft:#4A4638;--ink-faint:#837D6B;--rule:#D2CEBF;--shadow:rgba(30,26,12,.14);--pink:#E63975;--green:#0FA574;--amber:#E0A008;}
-  :root[data-theme="dark"]{--paper:#131210;--paper-2:#1A1815;--card:#1D1B17;--ink:#F1EDE1;--ink-soft:#C3BDAC;--ink-faint:#8B8574;--rule:#302D26;--shadow:rgba(0,0,0,.5);--pink:#FF5C93;--green:#2CD69A;--amber:#F5C542;}
-
   * { box-sizing: border-box; }
-  html, body { margin: 0; }
-  body {
-    background: var(--paper); color: var(--ink);
-    font-family: var(--body); line-height: 1.5;
-    -webkit-font-smoothing: antialiased;
-    min-height: 100dvh;
-    display: flex; flex-direction: column; align-items: center;
-    padding: 0 18px calc(28px + env(safe-area-inset-bottom));
-  }
-  .app { width: 100%; max-width: 460px; }
-
-  header {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 22px 2px 16px; border-bottom: 2px solid var(--ink); margin-bottom: 22px;
-  }
-  .brand { display: flex; align-items: baseline; gap: 10px; }
-  .brand h1 {
-    font-family: var(--display); font-weight: 800; text-transform: uppercase;
-    letter-spacing: -.02em; font-size: 30px; margin: 0; line-height: 1;
-  }
-  .brand h1 span { color: var(--pink); }
-  .brand .no { font-family: var(--mono); font-size: 12px; color: var(--ink-faint); letter-spacing: .08em; }
-  .tools { display: flex; align-items: center; gap: 6px; }
-  .streak {
-    font-family: var(--mono); font-size: 13px; color: var(--ink-soft);
-    display: inline-flex; align-items: center; gap: 5px;
-  }
-  .iconbtn {
-    background: none; border: 1.5px solid var(--rule); color: var(--ink);
-    width: 34px; height: 34px; border-radius: 8px; cursor: pointer;
-    font-size: 15px; display: grid; place-items: center; padding: 0;
-  }
-  .iconbtn:hover { border-color: var(--ink-faint); }
-
-  .swatches { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 8px; }
-  .swatch { border-radius: 14px; border: 1.5px solid var(--rule); overflow: hidden; position: relative; aspect-ratio: 16/10; }
-  .swatch .fill { position: absolute; inset: 0; }
-  .swatch .cap {
-    position: absolute; left: 12px; bottom: 10px;
-    font-family: var(--mono); font-size: 10.5px; letter-spacing: .16em; text-transform: uppercase;
-    color: #fff; mix-blend-mode: difference; z-index: 1;
-  }
-  .matchline {
-    text-align: center; font-family: var(--mono); font-size: 13px;
-    color: var(--ink-soft); margin: 10px 0 18px; min-height: 1.2em;
-  }
-  .matchline b { color: var(--ink); }
-
-  .sliders { display: flex; flex-direction: column; gap: 16px; margin-bottom: 20px; }
-  .slrow { display: grid; grid-template-columns: 22px 1fr 30px; align-items: center; gap: 12px; }
-  .slrow .lab { font-family: var(--mono); font-weight: 700; font-size: 14px; }
-  .slrow[data-ch="R"] .lab { color: #e5484d; }
-  .slrow[data-ch="G"] .lab { color: #30a46c; }
-  .slrow[data-ch="B"] .lab { color: #3e63dd; }
-  .slrow .hint { font-family: var(--mono); font-size: 15px; text-align: center; color: var(--ink-faint); }
-  input[type=range] {
-    -webkit-appearance: none; appearance: none; width: 100%; height: 10px;
-    border-radius: 6px; outline: none; cursor: pointer; margin: 0;
-    border: 1.5px solid var(--rule);
-  }
-  .slrow[data-ch="R"] input { background: linear-gradient(90deg,#1a0000,#ff2a2a); }
-  .slrow[data-ch="G"] input { background: linear-gradient(90deg,#001a00,#22dd44); }
-  .slrow[data-ch="B"] input { background: linear-gradient(90deg,#000018,#3a6bff); }
-  input[type=range]::-webkit-slider-thumb {
-    -webkit-appearance: none; appearance: none; width: 22px; height: 22px; border-radius: 50%;
-    background: #fff; border: 3px solid var(--ink); cursor: pointer; box-shadow: 0 2px 5px var(--shadow);
-  }
-  input[type=range]::-moz-range-thumb {
-    width: 22px; height: 22px; border-radius: 50%; background: #fff; border: 3px solid var(--ink); cursor: pointer;
-  }
-  input[type=range]:disabled { opacity: .55; cursor: default; }
-
-  .btn {
-    width: 100%; padding: 15px; border-radius: 12px; border: none; cursor: pointer;
-    font-family: var(--display); font-weight: 800; text-transform: uppercase; letter-spacing: .04em;
-    font-size: 16px; background: var(--ink); color: var(--paper); transition: transform .12s ease;
-  }
-  .btn:hover { transform: translateY(-2px); }
-  .btn:active { transform: translateY(0); }
-  .btn.pink { background: var(--pink); color: #fff; }
-  .btn:disabled { opacity: .4; cursor: default; transform: none; }
-
-  .guesses { display: flex; flex-direction: column; gap: 8px; margin: 22px 0 4px; }
-  .grow { display: flex; align-items: center; gap: 8px; }
-  .grow .n { font-family: var(--mono); font-size: 11px; color: var(--ink-faint); width: 16px; }
-  .cells { display: flex; gap: 8px; }
-  .cell {
-    width: 42px; height: 42px; border-radius: 8px; border: 1.5px solid var(--rule);
-    display: grid; place-items: center; font-family: var(--mono); font-weight: 700; font-size: 13px;
-    background: var(--paper-2); color: var(--ink-faint);
-  }
-  .cell.lock { background: var(--green); border-color: var(--green); color: #fff; }
-  .cell.near { background: var(--amber); border-color: var(--amber); color: #17150F; }
-  .cell.far  { background: var(--paper-2); }
-  .grow .pct { font-family: var(--mono); font-size: 12px; color: var(--ink-soft); margin-left: auto; }
-
-  .result {
-    margin-top: 20px; padding: 20px; border-radius: 14px; border: 1.5px solid var(--rule);
-    background: var(--card); text-align: center; display: none;
-  }
-  .result.show { display: block; }
-  .result h2 { font-family: var(--display); text-transform: uppercase; font-size: 24px; margin: 0 0 4px; letter-spacing: -.01em; }
-  .result .rgb { font-family: var(--mono); font-size: 13px; color: var(--ink-soft); margin-bottom: 14px; }
-  .result .share-preview {
-    font-family: var(--mono); font-size: 16px; letter-spacing: 3px; line-height: 1.5;
-    background: var(--paper-2); border-radius: 10px; padding: 12px; margin-bottom: 14px; white-space: pre;
-  }
-  .toast {
-    position: fixed; left: 50%; bottom: 26px; transform: translateX(-50%) translateY(20px);
-    background: var(--ink); color: var(--paper); padding: 10px 18px; border-radius: 100px;
-    font-family: var(--mono); font-size: 13px; opacity: 0; pointer-events: none; transition: all .25s ease; z-index: 20;
-  }
-  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-
-  .howto { font-size: 12.5px; color: var(--ink-faint); text-align: center; margin: 18px 0 0; line-height: 1.6; }
-  .howto b { color: var(--ink-soft); }
-
-  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+  html, body { margin: 0; padding: 0; background: #151310; }
+  input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 40px; background: transparent; cursor: pointer; margin: 0; padding: 0; }
+  input[type=range]:focus { outline: none; }
+  input[type=range]::-webkit-slider-runnable-track { height: 26px; border-radius: 4px; background: var(--track); border: 2px solid var(--edge); }
+  input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 14px; height: 40px; margin-top: -9px; background: var(--paper); border: 2px solid var(--edge2); border-radius: 3px; box-shadow: 0 2px 0 rgba(0,0,0,.4); }
+  input[type=range]::-moz-range-track { height: 26px; border-radius: 4px; background: var(--track); border: 2px solid var(--edge); }
+  input[type=range]::-moz-range-thumb { width: 12px; height: 36px; background: var(--paper); border: 2px solid var(--edge2); border-radius: 3px; }
+  @keyframes lockin { 0% { transform: translateY(6px); opacity: 0; } 100% { transform: none; opacity: 1; } }
+  a { color: var(--accent); }
+  a:hover { color: var(--ink); }
 </style>
 </head>
 <body>
-<div class="app">
-  <header>
-    <div class="brand">
-      <h1>Hue<span>day</span></h1>
-      <span class="no" id="puzzleNo">#—</span>
+<div style="min-height: 100vh; width: 100%; background: var(--bg); color: var(--ink); font-family: 'Archivo', sans-serif; display: flex; justify-content: center; align-items: flex-start; padding: 28px 18px 40px; --bg: #151310; --surface: #1d1915; --ink: #f3ede3; --muted: #8f857a; --line: #312a22; --paper: #efe6d8; --edge: #463d31; --accent: #ff3d81;">
+  <div aria-hidden="true" style="position: fixed; inset: 0; pointer-events: none; z-index: 50; opacity: 0.05; mix-blend-mode: overlay; background-image: url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E&quot;);"></div>
+
+  <div style="width: 100%; max-width: 440px; position: relative; z-index: 1;">
+
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
+      <div style="position: relative; display: inline-block; font-family: 'Archivo', sans-serif; font-weight: 900; font-size: 38px; line-height: 0.9; letter-spacing: -2px;">
+        <span aria-hidden="true" style="position: absolute; left: 2.5px; top: 2.5px; color: var(--accent);">HUEDAY</span>
+        <span style="position: relative; color: var(--ink);">HUEDAY</span>
+      </div>
+      <div style="text-align: right; font-family: 'Space Mono', monospace; font-size: 12px; color: var(--muted); line-height: 1.6; padding-top: 4px;">
+        <div>NO. <span id="puzzleNo"></span></div>
+        <div id="streakBadge" style="display: none; color: var(--accent); font-weight: 700;">🔥 <span id="streakVal"></span></div>
+      </div>
     </div>
-    <div class="tools">
-      <span class="streak" id="streak" title="Current streak">🔥 0</span>
-      <button class="iconbtn" id="themeBtn" title="Toggle theme" aria-label="Toggle theme">◐</button>
+
+    <div style="border: 2px solid var(--edge); border-radius: 8px; overflow: hidden; box-shadow: 6px 6px 0 rgba(0,0,0,.35);">
+      <div style="height: 132px; position: relative;" id="targetSwatch">
+        <span style="position: absolute; left: 10px; top: 9px; font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 1.5px; color: rgba(0,0,0,.62); background: rgba(255,255,255,.7); padding: 3px 7px; border-radius: 3px;">TODAY'S HUE</span>
+      </div>
+      <div style="height: 132px; position: relative; transition: background .3s ease;" id="mixSwatch">
+        <span style="position: absolute; left: 10px; top: 9px; font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 1.5px; color: rgba(0,0,0,.62); background: rgba(255,255,255,.7); padding: 3px 7px; border-radius: 3px;" id="bottomLabel">YOUR MIX</span>
+      </div>
     </div>
-  </header>
 
-  <div class="swatches">
-    <div class="swatch"><div class="fill" id="targetFill"></div><span class="cap">Target</span></div>
-    <div class="swatch"><div class="fill" id="mixFill"></div><span class="cap">Your mix</span></div>
+    <div id="sliderPanel" style="display: flex; flex-direction: column; gap: 15px; margin-top: 20px;">
+      <div style="display: flex; justify-content: space-between; align-items: baseline;">
+        <span style="font-family: 'Archivo', sans-serif; font-weight: 800; font-size: 13px; letter-spacing: 1.5px;">MIX TO MATCH</span>
+        <span style="font-family: 'Space Mono', monospace; font-size: 12px; color: var(--muted);" id="readout"></span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <span style="font-family: 'Space Mono', monospace; font-weight: 700; font-size: 13px; width: 12px; color: #ff5a5a;">R</span>
+        <input type="range" min="0" max="255" value="128" id="sR" style="--track: linear-gradient(90deg, #0d0b09, #ff5a5a); --edge: #463d31; --paper: #efe6d8; --edge2: var(--accent);"/>
+      </div>
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <span style="font-family: 'Space Mono', monospace; font-weight: 700; font-size: 13px; width: 12px; color: #54c98a;">G</span>
+        <input type="range" min="0" max="255" value="128" id="sG" style="--track: linear-gradient(90deg, #0d0b09, #54c98a); --edge: #463d31; --paper: #efe6d8; --edge2: var(--accent);"/>
+      </div>
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <span style="font-family: 'Space Mono', monospace; font-weight: 700; font-size: 13px; width: 12px; color: #5a8dff;">B</span>
+        <input type="range" min="0" max="255" value="128" id="sB" style="--track: linear-gradient(90deg, #0d0b09, #5a8dff); --edge: #463d31; --paper: #efe6d8; --edge2: var(--accent);"/>
+      </div>
+      <button id="guessBtn" style="margin-top: 4px; font-family: 'Archivo', sans-serif; font-weight: 900; font-size: 16px; letter-spacing: 1.5px; padding: 16px; background: var(--accent); color: #fff; border: none; border-radius: 6px; cursor: pointer; box-shadow: 4px 4px 0 rgba(0,0,0,.4);">GUESS · <span id="triesLeft">5</span> LEFT</button>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 18px;" id="guesses"></div>
+
+    <div id="resultPanel" style="display: none; border: 2px solid var(--line); border-radius: 8px; padding: 20px; background: var(--surface); flex-direction: column; gap: 16px; margin-top: 18px; box-shadow: 6px 6px 0 rgba(0,0,0,.3);">
+      <div>
+        <div style="font-family: 'Archivo', sans-serif; font-weight: 900; font-size: 24px; letter-spacing: -0.5px;" id="resultTitle"></div>
+        <div style="color: var(--muted); font-size: 14px; margin-top: 3px;" id="resultSub"></div>
+      </div>
+      <div style="font-family: 'Space Mono', monospace; font-size: 24px; line-height: 1.45; letter-spacing: 3px;" id="shareRows"></div>
+      <button id="copyBtn" style="font-family: 'Archivo', sans-serif; font-weight: 900; font-size: 15px; letter-spacing: 1.5px; padding: 15px; background: var(--accent); color: #fff; border: none; border-radius: 6px; cursor: pointer; box-shadow: 4px 4px 0 rgba(0,0,0,.4);">SHARE RESULT</button>
+      <div style="text-align: center; color: var(--muted); font-family: 'Space Mono', monospace; font-size: 12px; letter-spacing: 1px;">NEXT HUEDAY IN <span id="countdown"></span></div>
+    </div>
+
+    <div style="text-align: center; margin-top: 22px;">
+      <button id="resetBtn" style="background: none; border: none; color: var(--muted); font-family: 'Space Mono', monospace; font-size: 11px; cursor: pointer; text-decoration: underline; opacity: .7;">reset (demo)</button>
+    </div>
+
   </div>
-  <div class="matchline" id="matchline">Slide R · G · B to match the target</div>
-
-  <div class="sliders">
-    <div class="slrow" data-ch="R"><span class="lab">R</span><input type="range" min="0" max="255" value="128" id="sR"><span class="hint" id="hR"></span></div>
-    <div class="slrow" data-ch="G"><span class="lab">G</span><input type="range" min="0" max="255" value="128" id="sG"><span class="hint" id="hG"></span></div>
-    <div class="slrow" data-ch="B"><span class="lab">B</span><input type="range" min="0" max="255" value="128" id="sB"><span class="hint" id="hB"></span></div>
-  </div>
-
-  <button class="btn pink" id="guessBtn">Lock in guess · <span id="left">5</span> left</button>
-
-  <div class="guesses" id="guesses"></div>
-
-  <div class="result" id="result">
-    <h2 id="resultTitle">Nailed it</h2>
-    <div class="rgb" id="resultRgb"></div>
-    <div class="share-preview" id="sharePreview"></div>
-    <button class="btn" id="shareBtn">Share result</button>
-  </div>
-
-  <p class="howto">
-    Everyone gets the <b>same colour</b> each day. Green = channel locked, amber = close,
-    grey = off. Arrows tell you which way to slide. Solve in <b>5</b>.
-  </p>
 </div>
-<div class="toast" id="toast">Copied to clipboard</div>
 
 <script>
 (function(){
   "use strict";
-  // ---- deterministic daily seed ----
-  var EPOCH = Date.UTC(2024,0,1);
-  var DAY_MS = 86400000;
-  var today = new Date();
-  var dayNum = Math.floor((Date.UTC(today.getFullYear(),today.getMonth(),today.getDate()) - EPOCH)/DAY_MS);
 
-  function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
-  function hsl2rgb(h,s,l){
-    h/=360;var r,g,b;
-    if(s===0){r=g=b=l;}else{
-      var q=l<.5?l*(1+s):l+s-l*s, p=2*l-q;
-      function hue(t){if(t<0)t+=1;if(t>1)t-=1;if(t<1/6)return p+(q-p)*6*t;if(t<1/2)return q;if(t<2/3)return p+(q-p)*(2/3-t)*6;return p;}
-      r=hue(h+1/3);g=hue(h);b=hue(h-1/3);
-    }
-    return [Math.round(r*255),Math.round(g*255),Math.round(b*255)];
+  var ACCENT = "#ff3d81";
+  var DIFFICULTY = "normal";
+  var STORE_KEY = "hueday.v1";
+  var DAY = 86400000;
+
+  function dayNumberOf(d){
+    var midnight = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+    return Math.floor(midnight / DAY);
   }
-  var rnd = mulberry32(dayNum*2654435761 + 12345);
-  var H = Math.floor(rnd()*360);
-  var S = .45 + rnd()*.5;
-  var L = .34 + rnd()*.34;
-  var TARGET = hsl2rgb(H, S, L);
+  var dayNumber = dayNumberOf(new Date());
+  var launch = Math.floor(new Date(2026,0,1).getTime() / DAY);
+  var puzzleNo = dayNumber - launch + 1;
+
+  function makeTarget(seed){
+    var a = (Math.imul(seed, 2654435761) ^ 0x9e3779b9) >>> 0;
+    function rnd(){
+      a |= 0; a = (a + 0x6D2B79F5) | 0;
+      var t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    }
+    return { r: Math.floor(rnd()*256), g: Math.floor(rnd()*256), b: Math.floor(rnd()*256) };
+  }
+  var TARGET = makeTarget(dayNumber);
+
+  function thresholds(){
+    return DIFFICULTY === "easy" ? [15,40] : DIFFICULTY === "hard" ? [5,20] : [10,30];
+  }
+
+  function evalGuess(g){
+    var th = thresholds(), G = th[0], A = th[1];
+    var keys = ["r","g","b"];
+    var row = keys.map(function(k){
+      var diff = TARGET[k] - g[k];
+      var ad = Math.abs(diff);
+      var color, emoji, ok = false;
+      if (ad <= G) { color = "green"; emoji = "🟩"; ok = true; }
+      else if (ad <= A) { color = "amber"; emoji = "🟨"; }
+      else { color = "grey"; emoji = "⬛"; }
+      var arrow = ok ? "✓" : (diff > 0 ? "▲" : "▼");
+      return { label: k.toUpperCase(), color: color, emoji: emoji, arrow: arrow, ok: ok };
+    });
+    return { row: row, all: row.every(function(c){return c.ok;}), css: "rgb("+g.r+","+g.g+","+g.b+")" };
+  }
+
+  function calcCountdown(){
+    var n = new Date();
+    var next = new Date(n.getFullYear(), n.getMonth(), n.getDate()+1).getTime();
+    var s = Math.max(0, Math.floor((next - n.getTime())/1000));
+    var h = String(Math.floor(s/3600)).padStart(2,"0");
+    var m = String(Math.floor((s%3600)/60)).padStart(2,"0");
+    var sec = String(s%60).padStart(2,"0");
+    return h+":"+m+":"+sec;
+  }
 
   // ---- state ----
-  var MAX = 5;
-  var LOCK = 10, NEAR = 30;
+  var saved = null;
+  try { saved = JSON.parse(localStorage.getItem(STORE_KEY) || "null"); } catch(e){}
+  var prevLastSolved = saved ? (saved.lastSolved != null ? saved.lastSolved : -999) : -999;
+  var streak = saved ? (saved.streak || 0) : 0;
+  if (prevLastSolved !== dayNumber && prevLastSolved !== dayNumber - 1) streak = 0;
+
+  var guesses = [], solved = false, failed = false, gameOver = false;
+  if (saved && saved.day === dayNumber && Array.isArray(saved.guesses)) {
+    guesses = saved.guesses; solved = !!saved.solved; failed = !!saved.failed; gameOver = solved || failed;
+  }
+  var cur = { r: 128, g: 128, b: 128 };
+  var copyTimer;
+
+  function persist(){
+    try{
+      localStorage.setItem(STORE_KEY, JSON.stringify({
+        day: dayNumber, guesses: guesses, solved: solved, failed: failed, streak: streak,
+        lastSolved: solved ? dayNumber : prevLastSolved,
+      }));
+    }catch(e){}
+  }
+
+  // ---- DOM refs ----
+  function g(id){ return document.getElementById(id); }
   var els = {
-    sR:g("sR"), sG:g("sG"), sB:g("sB"),
-    hR:g("hR"), hG:g("hG"), hB:g("hB"),
-    targetFill:g("targetFill"), mixFill:g("mixFill"),
-    matchline:g("matchline"), guessBtn:g("guessBtn"), left:g("left"),
-    guesses:g("guesses"), result:g("result"), resultTitle:g("resultTitle"),
-    resultRgb:g("resultRgb"), sharePreview:g("sharePreview"), shareBtn:g("shareBtn"),
-    streak:g("streak"), puzzleNo:g("puzzleNo"), toast:g("toast"), themeBtn:g("themeBtn")
+    puzzleNo: g("puzzleNo"), streakBadge: g("streakBadge"), streakVal: g("streakVal"),
+    targetSwatch: g("targetSwatch"), mixSwatch: g("mixSwatch"), bottomLabel: g("bottomLabel"),
+    sliderPanel: g("sliderPanel"), readout: g("readout"),
+    sR: g("sR"), sG: g("sG"), sB: g("sB"),
+    guessBtn: g("guessBtn"), triesLeft: g("triesLeft"), guesses: g("guesses"),
+    resultPanel: g("resultPanel"), resultTitle: g("resultTitle"), resultSub: g("resultSub"),
+    shareRows: g("shareRows"), copyBtn: g("copyBtn"), countdown: g("countdown"), resetBtn: g("resetBtn"),
   };
-  function g(id){return document.getElementById(id);}
-  function rgbStr(c){return "rgb("+c[0]+","+c[1]+","+c[2]+")";}
-  function dist(a,b){var d=0;for(var i=0;i<3;i++){var x=a[i]-b[i];d+=x*x;}return Math.sqrt(d);}
-  function matchPct(a,b){return Math.max(0,Math.round(100*(1 - dist(a,b)/441.673)));}
 
-  var store = loadState();
-  var history = store.history || [];
-  var finished = store.done || false;
+  var CELL_STYLE = {
+    green: { bg: "#43c47d", fg: "#12100d" },
+    amber: { bg: "#f4a63a", fg: "#12100d" },
+    grey:  { bg: "#463d31", fg: "#9a9082" },
+  };
 
-  els.puzzleNo.textContent = "#"+dayNum;
-  els.targetFill.style.background = rgbStr(TARGET);
-
-  // theme
-  var savedTheme = null;
-  try { savedTheme = localStorage.getItem("hueday-theme"); } catch(e){}
-  if(savedTheme) document.documentElement.setAttribute("data-theme", savedTheme);
-  els.themeBtn.addEventListener("click", function(){
-    var cur = document.documentElement.getAttribute("data-theme");
-    var next = cur === "dark" ? "light" : cur === "light" ? "dark"
-      : (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "light" : "dark");
-    document.documentElement.setAttribute("data-theme", next);
-    try { localStorage.setItem("hueday-theme", next); } catch(e){}
-  });
-
-  function currentMix(){return [+els.sR.value, +els.sG.value, +els.sB.value];}
-  function updateMix(){
-    var c = currentMix();
-    els.mixFill.style.background = rgbStr(c);
-    if(!finished){
-      els.matchline.innerHTML = "Match: <b>"+matchPct(c,TARGET)+"%</b>";
-    }
+  function renderHeader(){
+    els.puzzleNo.textContent = puzzleNo;
+    if (streak > 0) { els.streakBadge.style.display = "block"; els.streakVal.textContent = streak; }
+    else { els.streakBadge.style.display = "none"; }
   }
-  [els.sR,els.sG,els.sB].forEach(function(s){ s.addEventListener("input", updateMix); });
 
-  function feedbackClass(diff){ return diff<=LOCK ? "lock" : diff<=NEAR ? "near" : "far"; }
-  function sqEmoji(diff){ return diff<=LOCK ? "🟩" : diff<=NEAR ? "🟨" : "⬛"; }
+  function renderSwatches(){
+    els.targetSwatch.style.background = "rgb("+TARGET.r+","+TARGET.g+","+TARGET.b+")";
+    els.mixSwatch.style.background = gameOver
+      ? "rgb("+TARGET.r+","+TARGET.g+","+TARGET.b+")"
+      : "rgb("+cur.r+","+cur.g+","+cur.b+")";
+    els.bottomLabel.textContent = gameOver ? "THE HUE" : "YOUR MIX";
+  }
 
-  function renderHistory(){
+  function renderSliderPanel(){
+    els.sliderPanel.style.display = gameOver ? "none" : "flex";
+    els.sR.value = cur.r; els.sG.value = cur.g; els.sB.value = cur.b;
+    els.readout.textContent = "R "+cur.r+"  G "+cur.g+"  B "+cur.b;
+    els.triesLeft.textContent = 5 - guesses.length;
+  }
+
+  function appendGuessRow(res){
+    var row = document.createElement("div");
+    row.style.cssText = "display:flex;align-items:center;gap:8px;animation:lockin .25s ease;";
+    var sw = document.createElement("span");
+    sw.style.cssText = "width:34px;height:34px;flex:none;border:2px solid var(--edge);border-radius:4px;background:"+res.css+";";
+    row.appendChild(sw);
+    var cellsWrap = document.createElement("div");
+    cellsWrap.style.cssText = "display:flex;gap:6px;flex:1;";
+    res.row.forEach(function(c){
+      var cell = document.createElement("span");
+      var style = CELL_STYLE[c.color];
+      cell.style.cssText = "flex:1;height:34px;display:flex;align-items:center;justify-content:center;gap:5px;border-radius:4px;font-family:'Space Mono',monospace;font-size:13px;font-weight:700;background:"+style.bg+";color:"+style.fg+";";
+      cell.textContent = c.label+" "+c.arrow;
+      cellsWrap.appendChild(cell);
+    });
+    row.appendChild(cellsWrap);
+    els.guesses.appendChild(row);
+  }
+
+  function renderGuessHistory(){
     els.guesses.innerHTML = "";
-    history.forEach(function(guess, i){
-      var row = document.createElement("div"); row.className = "grow";
-      var n = document.createElement("span"); n.className="n"; n.textContent=(i+1); row.appendChild(n);
-      var cells = document.createElement("div"); cells.className="cells";
-      ["R","G","B"].forEach(function(ch, idx){
-        var diff = Math.abs(guess[idx]-TARGET[idx]);
-        var c = document.createElement("div");
-        c.className = "cell "+feedbackClass(diff);
-        c.textContent = ch;
-        cells.appendChild(c);
-      });
-      row.appendChild(cells);
-      var pct = document.createElement("span"); pct.className="pct"; pct.textContent = matchPct(guess,TARGET)+"%";
-      row.appendChild(pct);
-      els.guesses.appendChild(row);
+    guesses.forEach(appendGuessRow);
+  }
+
+  function renderResult(){
+    if (!gameOver) { els.resultPanel.style.display = "none"; return; }
+    els.resultPanel.style.display = "flex";
+    els.resultTitle.textContent = solved ? "SOLVED" : "OUT OF TRIES";
+    els.resultSub.textContent = solved
+      ? "Matched in "+guesses.length+" "+(guesses.length===1?"try":"tries")
+      : "The hue got away — back tomorrow";
+    els.shareRows.innerHTML = "";
+    guesses.forEach(function(row){
+      var div = document.createElement("div");
+      div.textContent = row.row.map(function(c){return c.emoji;}).join("");
+      els.shareRows.appendChild(div);
     });
+    els.countdown.textContent = calcCountdown();
   }
 
-  function setHints(guess){
-    [["R",0,els.hR],["G",1,els.hG],["B",2,els.hB]].forEach(function(t){
-      var diff = guess[t[1]]-TARGET[t[1]];
-      var ad = Math.abs(diff);
-      t[2].textContent = ad<=LOCK ? "✓" : diff>0 ? "▼" : "▲";
-      t[2].style.color = ad<=LOCK ? "var(--green)" : "var(--ink-faint)";
-    });
+  function renderAll(){
+    renderHeader();
+    renderSwatches();
+    renderSliderPanel();
+    renderResult();
   }
 
-  function isWin(guess){ return Math.abs(guess[0]-TARGET[0])<=LOCK && Math.abs(guess[1]-TARGET[1])<=LOCK && Math.abs(guess[2]-TARGET[2])<=LOCK; }
-
-  function submit(){
-    if(finished) return;
-    var guess = currentMix();
-    history.push(guess);
-    renderHistory();
-    setHints(guess);
-    var won = isWin(guess);
-    if(won || history.length>=MAX){ endGame(won); }
-    else { els.left.textContent = (MAX-history.length); }
-    saveState();
+  // ---- events ----
+  function setCh(k, v){
+    if (gameOver) return;
+    cur[k] = v;
+    renderSwatches();
+    els.readout.textContent = "R "+cur.r+"  G "+cur.g+"  B "+cur.b;
   }
-  els.guessBtn.addEventListener("click", submit);
+  els.sR.addEventListener("input", function(){ setCh("r", +els.sR.value); });
+  els.sG.addEventListener("input", function(){ setCh("g", +els.sG.value); });
+  els.sB.addEventListener("input", function(){ setCh("b", +els.sB.value); });
 
-  function ratingWord(n){
-    return ["Impossible","Flawless","Sharp eye","Solid","Nice","Got there"][Math.min(n,5)];
-  }
-
-  function endGame(won){
-    finished = true;
-    [els.sR,els.sG,els.sB].forEach(function(s){s.disabled=true;});
-    els.guessBtn.disabled = true;
-    els.guessBtn.textContent = won ? "Solved" : "Out of guesses";
-
-    // streak
-    var streak = store.streak || 0;
-    if(store.lastCompletedDay !== dayNum){
-      if(won){
-        streak = (store.lastCompletedDay === dayNum-1) ? streak+1 : 1;
-      } else {
-        streak = 0;
-      }
+  els.guessBtn.addEventListener("click", function(){
+    if (gameOver) return;
+    var res = evalGuess({ r: cur.r, g: cur.g, b: cur.b });
+    guesses.push(res);
+    appendGuessRow(res);
+    if (res.all) {
+      solved = true; gameOver = true;
+      streak = (prevLastSolved === dayNumber - 1) ? streak + 1 : 1;
+    } else if (guesses.length >= 5) {
+      failed = true; gameOver = true;
     }
-    store.streak = streak;
-    store.lastCompletedDay = dayNum;
-    store.won = won;
-    saveState();
-    els.streak.textContent = "🔥 "+streak;
-
-    els.matchline.innerHTML = won
-      ? "Locked all three channels in <b>"+history.length+"</b>."
-      : "The colour was <b>"+rgbStr(TARGET)+"</b>.";
-
-    els.resultTitle.textContent = won ? ratingWord(history.length) : "So close";
-    els.resultRgb.textContent = "Today: "+rgbStr(TARGET)+"  ·  "+matchPct(history[history.length-1],TARGET)+"% best match";
-    els.sharePreview.textContent = buildShare(won).replace(/https?:\/\/\S+/,"").trim();
-    els.result.classList.add("show");
-  }
-
-  function buildShare(won){
-    var lines = [];
-    lines.push("Hueday #"+dayNum+"  "+(won?history.length:"X")+"/"+MAX);
-    history.forEach(function(guess){
-      var row = "";
-      for(var i=0;i<3;i++){ row += sqEmoji(Math.abs(guess[i]-TARGET[i])); }
-      lines.push(row);
-    });
-    var streak = store.streak||0;
-    if(streak>1) lines.push("🔥 "+streak+" day streak");
-    lines.push(location.href.split("#")[0]);
-    return lines.join("\n");
-  }
-
-  els.shareBtn.addEventListener("click", function(){
-    var text = buildShare(store.won);
-    if(navigator.share){
-      navigator.share({text:text}).catch(function(){ copy(text); });
-    } else { copy(text); }
+    persist();
+    renderHeader();
+    renderSwatches();
+    renderSliderPanel();
+    renderResult();
   });
-  function copy(text){
-    if(navigator.clipboard && navigator.clipboard.writeText){
-      navigator.clipboard.writeText(text).then(showToast, function(){ fallbackCopy(text); });
-    } else { fallbackCopy(text); }
+
+  function copyText(){
+    var head = "Hueday #"+puzzleNo+" "+(solved?guesses.length:"X")+"/5"+(streak>1?" 🔥"+streak:"");
+    var grid = guesses.map(function(row){ return row.row.map(function(c){return c.emoji;}).join(""); }).join("\n");
+    return head+"\n"+grid+"\nplay hueday.fun";
   }
   function fallbackCopy(text){
-    var ta=document.createElement("textarea"); ta.value=text; ta.style.position="fixed"; ta.style.opacity="0";
+    var ta = document.createElement("textarea");
+    ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
     document.body.appendChild(ta); ta.select();
-    try{ document.execCommand("copy"); showToast(); }catch(e){}
+    try { document.execCommand("copy"); } catch(e){}
     document.body.removeChild(ta);
   }
-  var toastT;
-  function showToast(){ els.toast.classList.add("show"); clearTimeout(toastT); toastT=setTimeout(function(){els.toast.classList.remove("show");},1600); }
+  els.copyBtn.addEventListener("click", function(){
+    var text = copyText();
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).catch(function(){ fallbackCopy(text); });
+    } else { fallbackCopy(text); }
+    els.copyBtn.textContent = "COPIED ✓";
+    clearTimeout(copyTimer);
+    copyTimer = setTimeout(function(){ els.copyBtn.textContent = "SHARE RESULT"; }, 2000);
+  });
 
-  function loadState(){
-    try{
-      var raw = localStorage.getItem("hueday-state");
-      if(!raw) return {};
-      var s = JSON.parse(raw);
-      // carry streak forward, but only load today's play progress
-      if(s.day !== dayNum){
-        return { streak: s.streak||0, lastCompletedDay: s.lastCompletedDay };
-      }
-      return s;
-    }catch(e){ return {}; }
-  }
-  function saveState(){
-    store.day = dayNum;
-    store.history = history;
-    store.done = finished;
-    try{ localStorage.setItem("hueday-state", JSON.stringify(store)); }catch(e){}
-  }
+  els.resetBtn.addEventListener("click", function(){
+    cur = { r: 128, g: 128, b: 128 };
+    guesses = []; solved = false; failed = false; gameOver = false;
+    els.copyBtn.textContent = "SHARE RESULT";
+    clearTimeout(copyTimer);
+    try { localStorage.removeItem(STORE_KEY); } catch(e){}
+    prevLastSolved = -999;
+    renderGuessHistory();
+    renderAll();
+  });
 
   // ---- init ----
-  els.streak.textContent = "🔥 "+(store.streak||0);
-  renderHistory();
-  updateMix();
-  if(finished){
-    // replay finished state
-    var last = history[history.length-1];
-    endGame(!!store.won);
-  } else if(history.length){
-    els.left.textContent = (MAX-history.length);
-    setHints(history[history.length-1]);
-  }
+  renderGuessHistory();
+  renderAll();
+  setInterval(function(){ els.countdown.textContent = calcCountdown(); }, 1000);
 })();
 </script>
 </body>
