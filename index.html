@@ -76,7 +76,13 @@
       <button id="guessBtn" style="margin-top: 4px; font-family: 'Archivo', sans-serif; font-weight: 900; font-size: 16px; letter-spacing: 1.5px; padding: 16px; background: var(--accent); color: #fff; border: none; border-radius: 6px; cursor: pointer; box-shadow: 4px 4px 0 rgba(0,0,0,.4);">GUESS · <span id="triesLeft">5</span> LEFT</button>
     </div>
 
-    <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 18px;" id="guesses"></div>
+    <div style="display: flex; align-items: center; gap: 14px; margin-top: 16px; font-family: 'Space Mono', monospace; font-size: 11px; letter-spacing: 1px; color: var(--muted);">
+      <span style="display: flex; align-items: center; gap: 6px;"><span style="width: 12px; height: 12px; border-radius: 3px; background: #43c47d;"></span>SPOT ON</span>
+      <span style="display: flex; align-items: center; gap: 6px;"><span style="width: 12px; height: 12px; border-radius: 3px; background: #f4a63a;"></span>CLOSE</span>
+      <span style="display: flex; align-items: center; gap: 6px;"><span style="width: 12px; height: 12px; border-radius: 3px; background: #463d31;"></span>FAR OFF</span>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 12px;" id="guesses"></div>
 
     <div id="resultPanel" style="display: none; border: 2px solid var(--line); border-radius: 8px; padding: 20px; background: var(--surface); flex-direction: column; gap: 16px; margin-top: 18px; box-shadow: 6px 6px 0 rgba(0,0,0,.3);">
       <div>
@@ -134,8 +140,7 @@
       if (ad <= G) { color = "green"; emoji = "🟩"; ok = true; }
       else if (ad <= A) { color = "amber"; emoji = "🟨"; }
       else { color = "grey"; emoji = "⬛"; }
-      var arrow = ok ? "✓" : (diff > 0 ? "▲" : "▼");
-      return { label: k.toUpperCase(), color: color, emoji: emoji, arrow: arrow, ok: ok };
+      return { label: k.toUpperCase(), color: color, emoji: emoji, ok: ok };
     });
     return { row: row, all: row.every(function(c){return c.ok;}), css: "rgb("+g.r+","+g.g+","+g.b+")" };
   }
@@ -224,7 +229,7 @@
       var cell = document.createElement("span");
       var style = CELL_STYLE[c.color];
       cell.style.cssText = "flex:1;height:34px;display:flex;align-items:center;justify-content:center;gap:5px;border-radius:4px;font-family:'Space Mono',monospace;font-size:13px;font-weight:700;background:"+style.bg+";color:"+style.fg+";";
-      cell.textContent = c.label+" "+c.arrow;
+      cell.textContent = c.label;
       cellsWrap.appendChild(cell);
     });
     row.appendChild(cellsWrap);
