@@ -91,7 +91,7 @@
       </div>
       <div style="font-family: 'Space Mono', monospace; font-size: 24px; line-height: 1.45; letter-spacing: 3px;" id="shareRows"></div>
       <button id="copyBtn" style="font-family: 'Archivo', sans-serif; font-weight: 900; font-size: 15px; letter-spacing: 1.5px; padding: 15px; background: var(--accent); color: #fff; border: none; border-radius: 6px; cursor: pointer; box-shadow: 4px 4px 0 rgba(0,0,0,.4);">SHARE RESULT</button>
-      <div style="text-align: center; color: var(--muted); font-family: 'Space Mono', monospace; font-size: 12px; letter-spacing: 1px;">NEXT HUEDAY IN <span id="countdown"></span></div>
+      <div id="countdownLine" style="text-align: center; color: var(--muted); font-family: 'Space Mono', monospace; font-size: 12px; letter-spacing: 1px;">NEXT HUEDAY IN <span id="countdown"></span></div>
     </div>
 
   </div>
@@ -103,16 +103,24 @@
 
   var ACCENT = "#ff3d81";
   var DIFFICULTY = "normal";
-  var STORE_KEY = "hueday.v1";
   var DAY = 86400000;
 
   function dayNumberOf(d){
     var midnight = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
     return Math.floor(midnight / DAY);
   }
-  var dayNumber = dayNumberOf(new Date());
   var launch = Math.floor(new Date(2026,0,1).getTime() / DAY);
-  var puzzleNo = dayNumber - launch + 1;
+  var todayNumber = dayNumberOf(new Date());
+  var todayNo = todayNumber - launch + 1;
+
+  // Optional ?no=N query param replays a past puzzle without touching today's game.
+  var params = new URLSearchParams(location.search);
+  var reqNo = parseInt(params.get("no") || params.get("puzzle"), 10);
+  var isArchive = reqNo >= 1 && reqNo < todayNo;
+  var puzzleNo = isArchive ? reqNo : todayNo;
+  var dayNumber = isArchive ? launch + reqNo - 1 : todayNumber;
+
+  var STORE_KEY = isArchive ? "hueday.archive." + puzzleNo : "hueday.v1";
 
   function makeTarget(seed){
     var a = (Math.imul(seed, 2654435761) ^ 0x9e3779b9) >>> 0;
@@ -187,7 +195,8 @@
     sR: g("sR"), sG: g("sG"), sB: g("sB"),
     guessBtn: g("guessBtn"), triesLeft: g("triesLeft"), guesses: g("guesses"),
     resultPanel: g("resultPanel"), resultTitle: g("resultTitle"), resultSub: g("resultSub"),
-    shareRows: g("shareRows"), copyBtn: g("copyBtn"), countdown: g("countdown"),
+    shareRows: g("shareRows"), copyBtn: g("copyBtn"),
+    countdown: g("countdown"), countdownLine: g("countdownLine"),
   };
 
   var CELL_STYLE = {
@@ -254,7 +263,11 @@
       div.textContent = row.row.map(function(c){return c.emoji;}).join("");
       els.shareRows.appendChild(div);
     });
-    els.countdown.textContent = calcCountdown();
+    if (isArchive) {
+      els.countdownLine.innerHTML = 'ARCHIVE PUZZLE · <a href="./" style="color:var(--accent);text-decoration:none;">PLAY TODAY\'S HUE →</a>';
+    } else {
+      els.countdown.textContent = calcCountdown();
+    }
   }
 
   function renderAll(){
@@ -282,7 +295,7 @@
     appendGuessRow(res);
     if (res.all) {
       solved = true; gameOver = true;
-      streak = (prevLastSolved === dayNumber - 1) ? streak + 1 : 1;
+      if (!isArchive) streak = (prevLastSolved === dayNumber - 1) ? streak + 1 : 1;
     } else if (guesses.length >= 5) {
       failed = true; gameOver = true;
     }
@@ -318,7 +331,7 @@
   // ---- init ----
   renderGuessHistory();
   renderAll();
-  setInterval(function(){ els.countdown.textContent = calcCountdown(); }, 1000);
+  if (!isArchive) setInterval(function(){ els.countdown.textContent = calcCountdown(); }, 1000);
 })();
 </script>
 </body>
