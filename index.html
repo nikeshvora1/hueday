@@ -47,9 +47,14 @@
       </div>
     </div>
 
+    <div style="display: flex; justify-content: flex-end; align-items: center; gap: 8px; margin-bottom: 10px;">
+      <button id="hardModeInfo" style="display: none; font-family: 'Space Mono', monospace; font-weight: 700; font-size: 12px; color: var(--muted); background: transparent; border: 1px solid var(--edge); border-radius: 50%; width: 26px; height: 26px; line-height: 1; cursor: pointer;">?</button>
+      <button id="modeToggle" style="font-family: 'Space Mono', monospace; font-size: 11px; letter-spacing: 1px; color: var(--muted); background: transparent; border: 1px solid var(--edge); border-radius: 20px; padding: 5px 12px; cursor: pointer;"></button>
+    </div>
+
     <div style="border: 2px solid var(--edge); border-radius: 8px; overflow: hidden; box-shadow: 6px 6px 0 rgba(0,0,0,.35);">
-      <div style="height: 132px; position: relative;" id="targetSwatch">
-        <span style="position: absolute; left: 10px; top: 9px; font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 1.5px; color: rgba(0,0,0,.62); background: rgba(255,255,255,.7); padding: 3px 7px; border-radius: 3px;">TODAY'S HUE</span>
+      <div style="height: 132px; position: relative; transition: background .3s ease;" id="targetSwatch">
+        <span style="position: absolute; left: 10px; top: 9px; font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 1.5px; color: rgba(0,0,0,.62); background: rgba(255,255,255,.7); padding: 3px 7px; border-radius: 3px;" id="topLabel">TODAY'S HUE</span>
       </div>
       <div style="height: 132px; position: relative; transition: background .3s ease;" id="mixSwatch">
         <span style="position: absolute; left: 10px; top: 9px; font-family: 'Space Mono', monospace; font-size: 10px; letter-spacing: 1.5px; color: rgba(0,0,0,.62); background: rgba(255,255,255,.7); padding: 3px 7px; border-radius: 3px;" id="bottomLabel">YOUR MIX</span>
@@ -95,6 +100,18 @@
     </div>
 
   </div>
+
+  <div id="hardModeModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,.65); z-index: 100; align-items: center; justify-content: center; padding: 24px;">
+    <div style="max-width: 380px; width: 100%; background: var(--surface); border: 2px solid var(--edge); border-radius: 8px; padding: 24px; box-shadow: 6px 6px 0 rgba(0,0,0,.4);">
+      <div style="font-family: 'Archivo', sans-serif; font-weight: 900; font-size: 20px; letter-spacing: -0.5px; margin-bottom: 12px;">🔥 HARD MODE</div>
+      <ul style="font-family: 'Space Mono', monospace; font-size: 13px; line-height: 1.7; color: var(--ink); padding-left: 18px; margin: 0 0 20px;">
+        <li>The target hue flashes for 10 seconds, then hides.</li>
+        <li>Every guess earns you another 10-second peek.</li>
+        <li>Miss 3 times and the target stays revealed for the rest of the round.</li>
+      </ul>
+      <button id="hardModeModalClose" style="width: 100%; font-family: 'Archivo', sans-serif; font-weight: 900; font-size: 15px; letter-spacing: 1.5px; padding: 14px; background: var(--accent); color: #fff; border: none; border-radius: 6px; cursor: pointer; box-shadow: 4px 4px 0 rgba(0,0,0,.4);">GOT IT</button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -102,8 +119,14 @@
   "use strict";
 
   var ACCENT = "#ff3d81";
-  var DIFFICULTY = "normal";
   var DAY = 86400000;
+  var REVEAL_MS = 10000;
+
+  var MODE_KEY = "hueday.mode";
+  var HARD_SEEN_KEY = "hueday.hardModeSeen";
+  var mode = "normal";
+  try { mode = localStorage.getItem(MODE_KEY) === "hard" ? "hard" : "normal"; } catch(e){}
+  var DIFFICULTY = "normal"; // hard mode's difficulty comes from hiding the hue, not tighter match windows
 
   function dayNumberOf(d){
     var midnight = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
@@ -120,7 +143,7 @@
   var puzzleNo = isArchive ? reqNo : todayNo;
   var dayNumber = isArchive ? launch + reqNo - 1 : todayNumber;
 
-  var STORE_KEY = isArchive ? "hueday.archive." + puzzleNo : "hueday.v1";
+  var STORE_KEY = (isArchive ? "hueday.archive." + puzzleNo : "hueday.v1") + (mode === "hard" ? ".hard" : "");
 
   function makeTarget(seed){
     var a = (Math.imul(seed, 2654435761) ^ 0x9e3779b9) >>> 0;
@@ -132,7 +155,8 @@
     }
     return { r: Math.floor(rnd()*256), g: Math.floor(rnd()*256), b: Math.floor(rnd()*256) };
   }
-  var TARGET = makeTarget(dayNumber);
+  var HARD_SEED_OFFSET = 1000003; // arbitrary, far outside any real dayNumber — keeps hard mode's color distinct from normal's without altering normal's existing formula
+  var TARGET = makeTarget(mode === "hard" ? dayNumber + HARD_SEED_OFFSET : dayNumber);
 
   function thresholds(){
     return DIFFICULTY === "easy" ? [15,40] : DIFFICULTY === "hard" ? [5,20] : [10,30];
@@ -176,12 +200,27 @@
   }
   var cur = { r: 128, g: 128, b: 128 };
   var copyTimer;
+  var hardSeen = false;
+  try { hardSeen = localStorage.getItem(HARD_SEEN_KEY) === "1"; } catch(e){}
+  var pendingFirstReveal = false;
+  var revealUntil = 0;
+  if (mode === "hard" && !gameOver) {
+    if (saved && saved.day === dayNumber && typeof saved.revealUntil === "number") {
+      revealUntil = saved.revealUntil;
+    } else if (hardSeen) {
+      revealUntil = Date.now() + REVEAL_MS;
+    } else {
+      // first time ever in hard mode: don't start the clock until the explainer modal is dismissed
+      pendingFirstReveal = true;
+    }
+  }
 
   function persist(){
     try{
       localStorage.setItem(STORE_KEY, JSON.stringify({
         day: dayNumber, guesses: guesses, solved: solved, failed: failed, streak: streak,
         lastSolved: solved ? dayNumber : prevLastSolved,
+        revealUntil: revealUntil,
       }));
     }catch(e){}
   }
@@ -190,7 +229,9 @@
   function g(id){ return document.getElementById(id); }
   var els = {
     puzzleNo: g("puzzleNo"), streakBadge: g("streakBadge"), streakVal: g("streakVal"),
-    targetSwatch: g("targetSwatch"), mixSwatch: g("mixSwatch"), bottomLabel: g("bottomLabel"),
+    modeToggle: g("modeToggle"), hardModeInfo: g("hardModeInfo"),
+    hardModeModal: g("hardModeModal"), hardModeModalClose: g("hardModeModalClose"),
+    targetSwatch: g("targetSwatch"), mixSwatch: g("mixSwatch"), topLabel: g("topLabel"), bottomLabel: g("bottomLabel"),
     sliderPanel: g("sliderPanel"), readout: g("readout"),
     sR: g("sR"), sG: g("sG"), sB: g("sB"),
     guessBtn: g("guessBtn"), triesLeft: g("triesLeft"), guesses: g("guesses"),
@@ -211,12 +252,50 @@
     else { els.streakBadge.style.display = "none"; }
   }
 
+  var MISS_REVEAL_THRESHOLD = 3;
+  function missesLockedOpen(){ return guesses.length >= MISS_REVEAL_THRESHOLD; }
+  function isRevealing(){ return mode !== "hard" || gameOver || missesLockedOpen() || Date.now() < revealUntil; }
+
   function renderSwatches(){
-    els.targetSwatch.style.background = "rgb("+TARGET.r+","+TARGET.g+","+TARGET.b+")";
+    var revealing = isRevealing();
+    els.targetSwatch.style.background = revealing
+      ? "rgb("+TARGET.r+","+TARGET.g+","+TARGET.b+")"
+      : "var(--surface)";
+
+    if (mode === "hard" && !gameOver) {
+      if (missesLockedOpen()) {
+        els.topLabel.textContent = "REVEALED — TOO MANY MISSES";
+      } else if (revealing) {
+        var secsLeft = Math.max(0, Math.ceil((revealUntil - Date.now())/1000));
+        els.topLabel.textContent = "MEMORIZE — " + secsLeft + "s";
+      } else {
+        els.topLabel.textContent = "HIDDEN — GUESS TO PEEK AGAIN";
+      }
+    } else {
+      els.topLabel.textContent = "TODAY'S HUE";
+    }
+
     els.mixSwatch.style.background = gameOver
       ? "rgb("+TARGET.r+","+TARGET.g+","+TARGET.b+")"
       : "rgb("+cur.r+","+cur.g+","+cur.b+")";
     els.bottomLabel.textContent = gameOver ? "THE HUE" : "YOUR MIX";
+  }
+
+  function renderModeToggle(){
+    els.modeToggle.textContent = mode === "hard" ? "🔥 HARD MODE — SWITCH TO NORMAL" : "SWITCH TO HARD MODE";
+    els.hardModeInfo.style.display = mode === "hard" ? "inline-block" : "none";
+  }
+
+  function openHardModeModal(){ els.hardModeModal.style.display = "flex"; }
+  function closeHardModeModal(){
+    els.hardModeModal.style.display = "none";
+    if (pendingFirstReveal) {
+      pendingFirstReveal = false;
+      revealUntil = Date.now() + REVEAL_MS;
+      try { localStorage.setItem(HARD_SEEN_KEY, "1"); } catch(e){}
+      if (!gameOver) persist();
+      renderSwatches();
+    }
   }
 
   function renderSliderPanel(){
@@ -284,6 +363,17 @@
     renderSwatches();
     els.readout.textContent = "R "+cur.r+"  G "+cur.g+"  B "+cur.b;
   }
+  els.modeToggle.addEventListener("click", function(){
+    var next = mode === "hard" ? "normal" : "hard";
+    try { localStorage.setItem(MODE_KEY, next); } catch(e){}
+    location.reload();
+  });
+  els.hardModeInfo.addEventListener("click", openHardModeModal);
+  els.hardModeModalClose.addEventListener("click", closeHardModeModal);
+  els.hardModeModal.addEventListener("click", function(e){
+    if (e.target === els.hardModeModal) closeHardModeModal();
+  });
+
   els.sR.addEventListener("input", function(){ setCh("r", +els.sR.value); });
   els.sG.addEventListener("input", function(){ setCh("g", +els.sG.value); });
   els.sB.addEventListener("input", function(){ setCh("b", +els.sB.value); });
@@ -299,6 +389,7 @@
     } else if (guesses.length >= 5) {
       failed = true; gameOver = true;
     }
+    if (mode === "hard" && !gameOver) revealUntil = Date.now() + REVEAL_MS;
     persist();
     renderHeader();
     renderSwatches();
@@ -307,7 +398,7 @@
   });
 
   function copyText(){
-    var head = ("Hueday #"+puzzleNo+" "+(solved?guesses.length:"X")+"/5"+(streak>1?" 🔥"+streak:"")).trim();
+    var head = ("Hueday #"+puzzleNo+(mode==="hard"?" HARD":"")+" "+(solved?guesses.length:"X")+"/5"+(streak>1?" 🔥"+streak:"")).trim();
     var grid = guesses.map(function(row){ return row.row.map(function(c){return c.emoji;}).join("").trim(); }).join("\n");
     return (head+"\n\n"+grid+"\n\nGive it a shot - https://nikeshvora1.github.io/hueday/").trim();
   }
@@ -330,8 +421,14 @@
 
   // ---- init ----
   renderGuessHistory();
+  renderModeToggle();
   renderAll();
   if (!isArchive) setInterval(function(){ els.countdown.textContent = calcCountdown(); }, 1000);
+  if (mode === "hard" && !gameOver) {
+    if (!pendingFirstReveal) persist(); // lock in revealUntil so a reload (incl. switching modes and back) can't re-grant a fresh peek
+    setInterval(renderSwatches, 500);
+  }
+  if (pendingFirstReveal) openHardModeModal();
 })();
 </script>
 </body>
