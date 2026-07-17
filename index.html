@@ -418,14 +418,29 @@
     try { document.execCommand("copy"); } catch(e){}
     document.body.removeChild(ta);
   }
-  els.copyBtn.addEventListener("click", function(){
-    var text = copyText();
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text).catch(function(){ fallbackCopy(text); });
-    } else { fallbackCopy(text); }
+  function flashCopied(){
     els.copyBtn.textContent = "COPIED ✓";
     clearTimeout(copyTimer);
     copyTimer = setTimeout(function(){ els.copyBtn.textContent = "SHARE RESULT"; }, 2000);
+  }
+  function copyToClipboard(text){
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).catch(function(){ fallbackCopy(text); }).then(flashCopied, flashCopied);
+    } else {
+      fallbackCopy(text);
+      flashCopied();
+    }
+  }
+  els.copyBtn.addEventListener("click", function(){
+    var text = copyText();
+    if (navigator.share) {
+      navigator.share({ text: text }).catch(function(err){
+        if (err && err.name === "AbortError") return; // user dismissed the native share sheet
+        copyToClipboard(text);
+      });
+    } else {
+      copyToClipboard(text);
+    }
   });
 
   // ---- init ----
